@@ -63,6 +63,7 @@ PLATA_STOCK_TRACKING = getattr(settings, 'PLATA_STOCK_TRACKING', False)
 
 #: All available currencies. Use ISO 4217 currency codes in this list only.
 CURRENCIES = getattr(settings, 'CURRENCIES', ('CHF', 'EUR', 'USD', 'CAD'))
+PLATA_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY','CHF')
 
 #: Target of order item product foreign key (Defaults to ``'product.Product'``)
 PLATA_SHOP_PRODUCT = getattr(settings, 'PLATA_SHOP_PRODUCT', 'product.Product')

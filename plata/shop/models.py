@@ -642,13 +642,19 @@ class PriceBase(models.Model):
         verbose_name = _('price')
         verbose_name_plural = _('prices')
 
-    currency = CurrencyField()
+    currency = CurrencyField(default=plata.settings.PLATA_CURRENCY)
     _unit_price = models.DecimalField(_('unit price'), max_digits=18, decimal_places=10)
     tax_included = models.BooleanField(_('tax included'),
         help_text=_('Is tax included in given unit price?'),
         default=plata.settings.PLATA_PRICE_INCLUDES_TAX)
+    def get_tax_class_or_none():
+        try:
+            return TaxClass.objects.all()[0]
+        except IndexError:
+            pass
+        return
     tax_class = models.ForeignKey(TaxClass, verbose_name=_('tax class'),
-                                  related_name='+')
+                                  related_name='+',default=get_tax_class_or_none)
 
     def __unicode__(self):
         return u'%s %.2f' % (self.currency, self.unit_price)

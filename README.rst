@@ -1,3 +1,8 @@
+Fork specific changes made:
+
+- Removed discounts by changing shop.views.Shop.checkout redirect
+- Added default currency and default tax class (shop.models and default_settings)
+
 ===========================================
 Plata - the lean and mean Django-based Shop
 ===========================================

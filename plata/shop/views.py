@@ -355,7 +355,8 @@ class Shop(object):
 
             if orderform.is_valid():
                 orderform.save()
-                return self.redirect('plata_shop_discounts')
+                #return self.redirect('plata_shop_discounts')
+                return self.redirect('plata_shop_confirmation')
         else:
             orderform = OrderForm(**orderform_kwargs)
 
