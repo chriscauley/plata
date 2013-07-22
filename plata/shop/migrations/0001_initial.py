@@ -38,6 +38,7 @@ class Migration(SchemaMigration):
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
             ('confirmed', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='orders', null=True, to=orm['auth.User'])),
+            ('language_code', self.gf('django.db.models.fields.CharField')(default='', max_length=10, blank=True)),
             ('status', self.gf('django.db.models.fields.PositiveIntegerField')(default=10)),
             ('_order_id', self.gf('django.db.models.fields.CharField')(max_length=20, blank=True)),
             ('email', self.gf('django.db.models.fields.EmailField')(max_length=75)),
@@ -52,7 +53,7 @@ class Migration(SchemaMigration):
             ('total', self.gf('django.db.models.fields.DecimalField')(default='0.00', max_digits=18, decimal_places=10)),
             ('paid', self.gf('django.db.models.fields.DecimalField')(default='0.00', max_digits=18, decimal_places=10)),
             ('notes', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('data_json', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('data', self.gf('plata.fields.JSONField')(blank=True)),
         ))
         db.send_create_signal('shop', ['Order'])
 
@@ -60,7 +61,7 @@ class Migration(SchemaMigration):
         db.create_table('shop_orderitem', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('order', self.gf('django.db.models.fields.related.ForeignKey')(related_name='items', to=orm['shop.Order'])),
-            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['simple.Product'], null=True, blank=True)),
+            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['product.Product'], null=True, on_delete=models.SET_NULL, blank=True)),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=100, blank=True)),
             ('sku', self.gf('django.db.models.fields.CharField')(max_length=100, blank=True)),
             ('quantity', self.gf('django.db.models.fields.IntegerField')()),
@@ -68,12 +69,12 @@ class Migration(SchemaMigration):
             ('_unit_price', self.gf('django.db.models.fields.DecimalField')(max_digits=18, decimal_places=10)),
             ('_unit_tax', self.gf('django.db.models.fields.DecimalField')(max_digits=18, decimal_places=10)),
             ('tax_rate', self.gf('django.db.models.fields.DecimalField')(max_digits=10, decimal_places=2)),
-            ('tax_class', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['shop.TaxClass'], null=True, blank=True)),
+            ('tax_class', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['shop.TaxClass'], null=True, on_delete=models.SET_NULL, blank=True)),
             ('is_sale', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('_line_item_price', self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=18, decimal_places=10)),
             ('_line_item_discount', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=18, decimal_places=10, blank=True)),
             ('_line_item_tax', self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=18, decimal_places=10)),
-            ('data_json', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('data', self.gf('plata.fields.JSONField')(blank=True)),
         ))
         db.send_create_signal('shop', ['OrderItem'])
 
@@ -104,9 +105,10 @@ class Migration(SchemaMigration):
             ('transaction_id', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
             ('authorized', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('notes', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('data_json', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('data', self.gf('plata.fields.JSONField')(blank=True)),
         ))
         db.send_create_signal('shop', ['OrderPayment'])
+
 
     def backwards(self, orm):
         # Removing unique constraint on 'OrderItem', fields ['order', 'product']
@@ -126,6 +128,7 @@ class Migration(SchemaMigration):
 
         # Deleting model 'OrderPayment'
         db.delete_table('shop_orderpayment')
+
 
     models = {
         'auth.group': {
@@ -164,6 +167,42 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
+        'kitchen_sink.image': {
+            'Meta': {'ordering': "('title',)", 'object_name': 'Image'},
+            'caption': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'caption_url': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'credit': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'credit_url': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'file': ('django.db.models.fields.files.ImageField', [], {'max_length': '100'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        'product.category': {
+            'Meta': {'ordering': "('order',)", 'object_name': 'Category'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'order': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'slug': ('django.db.models.fields.SlugField', [], {'max_length': '32'})
+        },
+        'product.product': {
+            'Meta': {'ordering': "['name']", 'object_name': 'Product'},
+            'categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['product.Category']", 'null': 'True', 'symmetrical': 'False'}),
+            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'featured': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'images': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['kitchen_sink.Image']", 'through': "orm['product.ProductImage']", 'symmetrical': 'False'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
+            'number_in_stock': ('django.db.models.fields.IntegerField', [], {'default': '1'}),
+            'short_description': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '50'})
+        },
+        'product.productimage': {
+            'Meta': {'ordering': "('order',)", 'object_name': 'ProductImage'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'image': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['kitchen_sink.Image']"}),
+            'order': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['product.Product']"})
+        },
         'shop.order': {
             'Meta': {'object_name': 'Order'},
             '_order_id': ('django.db.models.fields.CharField', [], {'max_length': '20', 'blank': 'True'}),
@@ -177,12 +216,13 @@ class Migration(SchemaMigration):
             'confirmed': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'currency': ('django.db.models.fields.CharField', [], {'max_length': '3'}),
-            'data_json': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'data': ('plata.fields.JSONField', [], {'blank': 'True'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'items_discount': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '18', 'decimal_places': '10'}),
             'items_subtotal': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '18', 'decimal_places': '10'}),
             'items_tax': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '18', 'decimal_places': '10'}),
+            'language_code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '10', 'blank': 'True'}),
             'notes': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'paid': ('django.db.models.fields.DecimalField', [], {'default': "'0.00'", 'max_digits': '18', 'decimal_places': '10'}),
             'shipping_address': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -209,15 +249,15 @@ class Migration(SchemaMigration):
             '_unit_price': ('django.db.models.fields.DecimalField', [], {'max_digits': '18', 'decimal_places': '10'}),
             '_unit_tax': ('django.db.models.fields.DecimalField', [], {'max_digits': '18', 'decimal_places': '10'}),
             'currency': ('django.db.models.fields.CharField', [], {'max_length': '3'}),
-            'data_json': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'data': ('plata.fields.JSONField', [], {'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'is_sale': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
             'order': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'items'", 'to': "orm['shop.Order']"}),
-            'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['simple.Product']", 'null': 'True', 'blank': 'True'}),
+            'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['product.Product']", 'null': 'True', 'on_delete': 'models.SET_NULL', 'blank': 'True'}),
             'quantity': ('django.db.models.fields.IntegerField', [], {}),
             'sku': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'tax_class': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['shop.TaxClass']", 'null': 'True', 'blank': 'True'}),
+            'tax_class': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['shop.TaxClass']", 'null': 'True', 'on_delete': 'models.SET_NULL', 'blank': 'True'}),
             'tax_rate': ('django.db.models.fields.DecimalField', [], {'max_digits': '10', 'decimal_places': '2'})
         },
         'shop.orderpayment': {
@@ -225,7 +265,7 @@ class Migration(SchemaMigration):
             'amount': ('django.db.models.fields.DecimalField', [], {'max_digits': '10', 'decimal_places': '2'}),
             'authorized': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'currency': ('django.db.models.fields.CharField', [], {'max_length': '3'}),
-            'data_json': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'data': ('plata.fields.JSONField', [], {'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'notes': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'order': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'payments'", 'to': "orm['shop.Order']"}),
@@ -237,7 +277,7 @@ class Migration(SchemaMigration):
             'transaction_id': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'})
         },
         'shop.orderstatus': {
-            'Meta': {'ordering': "('created',)", 'object_name': 'OrderStatus'},
+            'Meta': {'ordering': "('created', 'id')", 'object_name': 'OrderStatus'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'notes': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -251,14 +291,18 @@ class Migration(SchemaMigration):
             'priority': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
             'rate': ('django.db.models.fields.DecimalField', [], {'max_digits': '10', 'decimal_places': '2'})
         },
-        'simple.product': {
-            'Meta': {'ordering': "['ordering', 'name']", 'object_name': 'Product'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+        'taggit.tag': {
+            'Meta': {'object_name': 'Tag'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'ordering': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
-            'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '50'})
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'}),
+            'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '100'})
+        },
+        'taggit.taggeditem': {
+            'Meta': {'object_name': 'TaggedItem'},
+            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'taggit_taggeditem_tagged_items'", 'to': "orm['contenttypes.ContentType']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'object_id': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'tag': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'taggit_taggeditem_items'", 'to': "orm['taggit.Tag']"})
         }
     }
 
